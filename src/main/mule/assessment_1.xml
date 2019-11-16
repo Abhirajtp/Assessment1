@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="21088bd1-9a7b-4a59-b591-485c8ab44982" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="0081e9d9-d030-4d69-b18a-890831b2e36e" >
+		<db:my-sql-connection host="db4free.net" port="3306" user="abhiraj" password="Arduino@11" database="training11" />
+	</db:config>
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="be4e2f89-9f73-4fa2-adfe-cac394cb6f07" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<http:listener-config name="HTTP_Listener_config2" doc:name="HTTP Listener config" doc:id="5e2892ce-1e2f-4682-9d9a-c11071f765e7" >
+		<http:listener-connection host="0.0.0.0" port="8083" />
+	</http:listener-config>
+	<flow name="assessment_1Flow3" doc:id="d6e2a2eb-492d-4357-82aa-9db439f714e4" >
+		<http:listener doc:name="Listener" doc:id="3450be00-6856-4ab1-b939-59fb06acfa33" config-ref="HTTP_Listener_config" path="/assessment1"/>
+		<choice doc:name="Choice" doc:id="f1c1c0e5-29e3-44ff-8982-349a7baac15e" >
+			<when expression="#[attributes.queryParams.qp1 =='select']">
+				<flow-ref doc:name="SELECT" doc:id="96a47720-50b3-4f46-91aa-9ff70e8f5aa1" name="select"/>
+			</when>
+			<when expression="#[attributes.queryParams.qp1 =='insert']">
+				<flow-ref doc:name="INSERT" doc:id="eddf6f3c-355b-4623-a484-0de558caf460" name="Insert"/>
+			</when>
+			<when expression="#[attributes.queryParams.qp1 =='update']">
+				<flow-ref doc:name="UPDATE" doc:id="16714fd5-30dc-4ca8-a250-3e33d5dba7f9" name="update"/>
+			</when>
+			<otherwise >
+				<set-payload value="invalid option" doc:name="Set Payload" doc:id="05e49650-20ea-4655-bac7-30668735ed3e" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="Insert" doc:id="25dab60e-8904-404c-8856-67ba61852822" >
+		<db:insert doc:name="Insert" doc:id="c731ad26-491d-4292-a723-48754fe3f074" config-ref="Database_Config">
+			<db:sql >INSERT INTO LazyFasions VALUES(:Cid,:Name,:Address,:Age,:PhoneNo)</db:sql>
+			<db:input-parameters ><![CDATA[#[{'Cid':payload.Cid,
+	'Address':payload.Address,
+	'Name':payload.Name,
+	'Age':payload.Age,
+	'PhoneNo':payload.PhoneNo
+}]]]></db:input-parameters>
+		</db:insert>
+	</flow>
+	<flow name="select" doc:id="11d1f1a9-3e7e-4280-bf6a-e0c9b3b02c7e" >
+		<db:select doc:name="Select" doc:id="14d4ce9b-f308-4f44-b363-f22b9e8efdf6" config-ref="Database_Config">
+			<db:sql >SELECT * FROM LazyFasions</db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="b51f4f85-05ca-47b7-a691-2be23fa6d14a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	Cid: payload01.CustomerID,
+	Name: payload01.Name,
+	Address: payload01.address,
+	Age: payload01.Age,
+	PhoneNo: payload01.PhoneNo
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="update" doc:id="07b610f9-c30f-4321-8e87-d06444ba819c" >
+		<db:update doc:name="Update" doc:id="74fe9092-6edb-4d4b-8b58-474bb2f8a8b5" config-ref="Database_Config">
+			<db:sql >UPDATE LazyFasions SET Name=:Name,address=:Address,Age=:Age,PhoneNo=:PhoneNo WHERE CustomerID=:Cid;</db:sql>
+			<db:input-parameters ><![CDATA[#[{'Cid':payload.Cid,
+	'Address':payload.Address,
+	'Name':payload.Name,
+	'Age':payload.Age,
+	'PhoneNo':payload.PhoneNo
+}]]]></db:input-parameters>
+		</db:update>
+	</flow>
+</mule>
